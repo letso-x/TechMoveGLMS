@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using static TechMoveGLMS.Models.ConractStatus;
 
 namespace TechMoveGLMS.Models
 {
@@ -7,12 +8,19 @@ namespace TechMoveGLMS.Models
     {
         public int Id { get; set; }
 
-        [Required]
-        public string Title { get; set; }
+        [Required(ErrorMessage = "Please input valid start date")]
+        [Display(Name = "Start Date")]
+        public DateTime StartDate { get; set; }
 
-        public string  ContractStatus Status { get; set; }
+        [Required(ErrorMessage = "Please input valid end date")]
+        [Display(Name = "End Date")]
+        public DateTime EndDate { get; set; }
 
-        public string AgreementFilePath { get; set; }
+        public ContractStatus Status { get; set; }
+
+        public string SignedAgreement { get; set; }
+
+        public string ServiceLevel { get; set; }
 
         [ForeignKey("Client")]
         public int ClientId { get; set; }

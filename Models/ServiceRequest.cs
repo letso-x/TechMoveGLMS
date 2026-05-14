@@ -5,11 +5,15 @@ namespace TechMoveGLMS.Models
     public class ServiceRequest
     {
         public int Id { get; set; }
-        [Required(ErrorMessage = "")]
+        [Required(ErrorMessage = "Please add a description")]
         public string Description { get; set; }
 
         [ForeignKey("Contract")]
         public int ContractId { get; set; }
+
+        public double Cost { get; set; }
+
+        public ServiceRequestStatus Status { get; set; }
         public Contract Contract { get; set; }
     }
 }
