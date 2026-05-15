@@ -13,6 +13,10 @@ namespace TechMoveGLMS.Models
         [Required(ErrorMessage = "Please add valid email address")]
         public string Email { get; set; }
 
+        [Display(Name = "Phone Number")]
+        [Required(ErrorMessage = "Please add valid phone number")]
+        public string PhoneNumber { get; set; }
+
         [Display(Name = "Region")]
         [Required(ErrorMessage = "Please add client region")]
         public string Region { get; set; }
