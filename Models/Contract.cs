@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using static TechMoveGLMS.Models.ConractStatus;
+using static TechMoveGLMS.Models.ContractStatus;
 
 namespace TechMoveGLMS.Models
 {
