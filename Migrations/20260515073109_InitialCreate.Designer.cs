@@ -12,7 +12,7 @@ using TechMoveGLMS.Data;
 namespace TechMoveGLMS.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260515063858_InitialCreate")]
+    [Migration("20260515073109_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
