@@ -4,7 +4,7 @@
     ViewData["Title"] = "Details";
 }
 
-<h1>Details</h1>
+<h1>Contract Details</h1>
 
 <div>
     <h4>Contract</h4>
@@ -17,6 +17,7 @@
             @Html.DisplayFor(model => model.StartDate)
         </dd>
     </dl>
+    <dl class="row">
         <dt class = "col-sm-2">
             @Html.DisplayNameFor(model => model.EndDate)
         </dt>
@@ -24,6 +25,7 @@
             @Html.DisplayFor(model => model.EndDate)
         </dd>
     </dl>
+    <dl class="row">
         <dt class = "col-sm-2">
             @Html.DisplayNameFor(model => model.Status)
         </dt>
@@ -31,13 +33,26 @@
             @Html.DisplayFor(model => model.Status)
         </dd>
     </dl>
+    <dl class="row">
         <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.SignedAgreement)
+            Signed Agreement
         </dt>
         <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.SignedAgreement)
+            @if (!string.IsNullOrEmpty(Model.SignedAgreement))
+            {
+                <!-- download link for pdf -->
+                <a href="@Url.Action("Download", "Contracts", new { id = Model.Id })" class="btn btn-sm btn-primary">
+                    Download PDF
+                </a>
+                <span class="ml-2">(@Model.SignedAgreement)</span>
+            }
+            else
+            {
+                <span>No file uploaded</span>
+            }
         </dd>
     </dl>
+    <dl class="row">
         <dt class = "col-sm-2">
             @Html.DisplayNameFor(model => model.ServiceLevel)
         </dt>
@@ -45,6 +60,7 @@
             @Html.DisplayFor(model => model.ServiceLevel)
         </dd>
     </dl>
+    <dl class="row">
         <dt class = "col-sm-2">
             @Html.DisplayNameFor(model => model.ClientId)
         </dt>
@@ -52,22 +68,8 @@
             @Html.DisplayFor(model => model.ClientId)
         </dd>
     </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.Client)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.Client)
-        </dd>
-    </dl>
-        <dt class = "col-sm-2">
-            @Html.DisplayNameFor(model => model.ServiceRequests)
-        </dt>
-        <dd class = "col-sm-10">
-            @Html.DisplayFor(model => model.ServiceRequests)
-        </dd>
-    </dl>
 </div>
 <div>
-    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
-    <a asp-action="Index">Back to List</a>
+    <a asp-action="Edit" asp-route-id="@Model?.Id" class="btn btn-warning">Edit</a> |
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
 </div>

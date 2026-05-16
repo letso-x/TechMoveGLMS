@@ -4,7 +4,7 @@
     ViewData["Title"] = "Create";
 }
 
-<h1>Create</h1>
+<h1>Create New Service Request</h1>
 
 <h4>ServiceRequest</h4>
 <hr />
@@ -25,10 +25,34 @@
                 <span asp-validation-for="ContractId" class="text-danger"></span>
             </div>
 
+        
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5>Cost (USD to ZAR Conversion)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label for="usdAmount" class="control-label">Amount in USD</label>
+                        <input type="number" id="usdAmount" class="form-control" placeholder="Enter USD amount" step="0.01" min="0" />
+                    </div>
+
+                    <div class="form-group">
+                        <button type="button" id="convertBtn" class="btn btn-info">Convert to ZAR</button>
+                    </div>
+
+                    <div class="form-group" id="conversionResult" style="display:none;">
+                        <p>
+                            <strong id="conversionText"></strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
             <div class="form-group">
-                <label asp-for="Cost" class="control-label"></label>
-                <input asp-for="Cost" class="form-control" />
+                <label asp-for="Cost" class="control-label">Cost (ZAR)</label>
+                <input asp-for="Cost" class="form-control" readonly />
                 <span asp-validation-for="Cost" class="text-danger"></span>
+                <small class="form-text text-muted">This will be auto-filled from the conversion above</small>
             </div>
 
             <div class="form-group">
@@ -37,11 +61,6 @@
                 <span asp-validation-for="Status" class="text-danger"></span>
             </div>
 
-            <div class="form-group">
-                <label asp-for="Contract" class="control-label"></label>
-                <input asp-for="Contract" class="form-control" />
-                <span asp-validation-for="Contract" class="text-danger"></span>
-            </div>
             <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />
             </div>
@@ -52,3 +71,65 @@
 <div>
     <a asp-action="Index">Back to List</a>
 </div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+
+    <script>
+        // handle currency conversion
+        document.getElementById('convertBtn').addEventListener('click', async function() {
+            var usdAmount = parseFloat(document.getElementById('usdAmount').value);
+
+            // validate the input
+            if (isNaN(usdAmount) || usdAmount < 0) {
+                alert('Please enter a valid USD amount');
+                return;
+            }
+
+            // if zero, just set result to 0
+            if (usdAmount === 0) {
+                document.getElementById('conversionText').innerText = '0 USD = 0 ZAR';
+                document.getElementById('conversionResult').style.display = 'block';
+                document.getElementById('Cost').value = 0;
+                return;
+            }
+
+            try {
+                // call the controller endpoint to convert currency
+                var response = await fetch('@Url.Action("ConvertCurrency", "Contracts")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ amount: usdAmount })
+                });
+
+                if (!response.ok) {
+                    alert('Error converting currency');
+                    return;
+                }
+
+                var data = await response.json();
+                var result = data.result;
+
+                // show the conversion result
+                document.getElementById('conversionText').innerText = usdAmount + ' USD = ' + result.toFixed(2) + ' ZAR';
+                document.getElementById('conversionResult').style.display = 'block';
+
+                // set the cost field
+                document.getElementById('Cost').value = result.toFixed(2);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Failed to convert currency. Please check your connection.');
+            }
+        });
+
+        // allow pressing enter to convert
+        document.getElementById('usdAmount').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                document.getElementById('convertBtn').click();
+            }
+        });
+    </script>
+}

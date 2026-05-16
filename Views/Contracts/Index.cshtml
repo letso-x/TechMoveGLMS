@@ -4,43 +4,69 @@
     ViewData["Title"] = "Index";
 }
 
-<h1>Index</h1>
+<h1>Contracts</h1>
 
 <p>
-    <a asp-action="Create">Create New</a>
+    <a asp-action="Create" class="btn btn-primary">Create New</a>
 </p>
-<table class="table">
-    <thead>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Search & Filter</h5>
+        <form method="get" asp-action="Index" class="form-inline">
+            <div class="form-group mr-3">
+                <label for="startDate" class="mr-2">Start Date:</label>
+                <input type="date" id="startDate" name="startDate" class="form-control" value="@ViewBag.StartDate" />
+            </div>
+
+            <div class="form-group mr-3">
+                <label for="endDate" class="mr-2">End Date:</label>
+                <input type="date" id="endDate" name="endDate" class="form-control" value="@ViewBag.EndDate" />
+            </div>
+
+            <div class="form-group mr-3">
+                <label for="status" class="mr-2">Status:</label>
+                <select id="status" name="status" class="form-control">
+                    <option value="">-- All --</option>
+                    <option value="Draft" selected="@(ViewBag.Status == "Draft")">Draft</option>
+                    <option value="Active" selected="@(ViewBag.Status == "Active")">Active</option>
+                    <option value="Expired" selected="@(ViewBag.Status == "Expired")">Expired</option>
+                    <option value="OnHold" selected="@(ViewBag.Status == "OnHold")">On Hold</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-info">Filter</button>
+            <a href="@Url.Action("Index")" class="btn btn-secondary ml-2">Clear</a>
+        </form>
+    </div>
+</div>
+
+<table class="table table-striped">
+    <thead class="table-dark">
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.StartDate)
+                @Html.DisplayNameFor(model => model.FirstOrDefault().StartDate)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.EndDate)
+                @Html.DisplayNameFor(model => model.FirstOrDefault().EndDate)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.Status)
+                @Html.DisplayNameFor(model => model.FirstOrDefault().Status)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.SignedAgreement)
+                Signed Agreement
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ServiceLevel)
+                @Html.DisplayNameFor(model => model.FirstOrDefault().ServiceLevel)
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.ClientId)
+                @Html.DisplayNameFor(model => model.FirstOrDefault().ClientId)
             </th>
-            <th>
-                @Html.DisplayNameFor(model => model.Client)
-            </th>
-            <th>
-                @Html.DisplayNameFor(model => model.ServiceRequests)
-            </th>
-            <th></th>
+            <th>Actions</th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
+        @foreach (var item in Model) {
         <tr>
             <td>
                 @Html.DisplayFor(model => item.StartDate)
@@ -52,7 +78,17 @@
                 @Html.DisplayFor(model => item.Status)
             </td>
             <td>
-                @Html.DisplayFor(model => item.SignedAgreement)
+                @if (!string.IsNullOrEmpty(item.SignedAgreement))
+                {
+                    
+                    <a href="@Url.Action("Download", "Contracts", new { id = item.Id })" target="_blank" class="btn btn-sm btn-info">
+                        Download
+                    </a>
+                }
+                else
+                {
+                    <span class="text-muted">-</span>
+                }
             </td>
             <td>
                 @Html.DisplayFor(model => item.ServiceLevel)
@@ -61,17 +97,11 @@
                 @Html.DisplayFor(model => item.ClientId)
             </td>
             <td>
-                @Html.DisplayFor(model => item.Client)
-            </td>
-            <td>
-                @Html.DisplayFor(model => item.ServiceRequests)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
+                <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
+                <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Details</a>
+                <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-sm btn-danger">Delete</a>
             </td>
         </tr>
-}
+        }
     </tbody>
 </table>

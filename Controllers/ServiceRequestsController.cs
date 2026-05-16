@@ -3,20 +3,25 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TechMoveGLMS.Models;
 using TechMoveGLMS.Data;
+using TechMoveGLMS.Interfaces;
 
 public class ServiceRequestsController : Controller
 {
     private readonly AppDbContext _context;
+    private readonly IServiceRequestService _service;
 
-    public ServiceRequestsController(AppDbContext context)
+    // inject dependencies
+    public ServiceRequestsController(AppDbContext context, IServiceRequestService service)
     {
         _context = context;
+        _service = service;
     }
 
-    // GET: SERVICEREQUESTS
+    // GET: SERVICEREQUESTS - get all requests
     public async Task<IActionResult> Index()    
     {
-        return View(await _context.ServiceRequests.ToListAsync());
+        var requests = await _context.ServiceRequests.ToListAsync();
+        return View(requests);
     }
 
     // GET: SERVICEREQUESTS/Details/5
@@ -43,17 +48,15 @@ public class ServiceRequestsController : Controller
         return View();
     }
 
-    // POST: SERVICEREQUESTS/Create
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+    // POST: SERVICEREQUESTS/Create - validates using service before saving
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create([Bind("Id,Description,ContractId,Cost,Status,Contract")] ServiceRequest servicerequest)
     {
         if (ModelState.IsValid)
         {
-            _context.Add(servicerequest);
-            await _context.SaveChangesAsync();
+            // service handles validation (contract status check)
+            await _service.CreateRequest(servicerequest);
             return RedirectToAction(nameof(Index));
         }
         return View(servicerequest);
@@ -76,8 +79,6 @@ public class ServiceRequestsController : Controller
     }
 
     // POST: SERVICEREQUESTS/Edit/5
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int? id, [Bind("Id,Description,ContractId,Cost,Status,Contract")] ServiceRequest servicerequest)
@@ -94,7 +95,7 @@ public class ServiceRequestsController : Controller
                 _context.Update(servicerequest);
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch
             {
                 if (!ServiceRequestExists(servicerequest.Id))
                 {
@@ -143,7 +144,7 @@ public class ServiceRequestsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    private bool ServiceRequestExists(int? id)
+    private bool ServiceRequestExists(int id)
     {
         return _context.ServiceRequests.Any(e => e.Id == id);
     }

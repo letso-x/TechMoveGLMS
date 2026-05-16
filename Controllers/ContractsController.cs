@@ -1,22 +1,45 @@
 
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TechMoveGLMS.Models;
-using TechMoveGLMS.Data;
+using TechMoveGLMS.Interfaces;
+using System.Text.Json;
 
 public class ContractsController : Controller
 {
-    private readonly AppDbContext _context;
+    private readonly IContractService _contractService;
+    private readonly IWebHostEnvironment _environment;
+    private readonly ICurrencyService _currencyService;
 
-    public ContractsController(AppDbContext context)
+    // dependency injection for services
+    public ContractsController(IContractService contractService, IWebHostEnvironment environment, ICurrencyService currencyService)
     {
-        _context = context;
+        _contractService = contractService;
+        _environment = environment;
+        _currencyService = currencyService;
     }
 
-    // GET: CONTRACTS
-    public async Task<IActionResult> Index()    
+    // GET: CONTRACTS - shows all contracts with optional filters
+    public async Task<IActionResult> Index(DateTime? startDate = null, DateTime? endDate = null, string status = null)    
     {
-        return View(await _context.Contracts.ToListAsync());
+        // i think this is how you parse the status from the dropdown
+        ContractStatus? parsedStatus = null;
+        if (!string.IsNullOrEmpty(status))
+        {
+            if (Enum.TryParse<ContractStatus>(status, out var s))
+            {
+                parsedStatus = s;
+            }
+        }
+
+        // get contracts filtered by dates and status
+        var contracts = await _contractService.GetAllContractsAsync(startDate, endDate, parsedStatus);
+
+        // pass filter values to view so form stays populated
+        ViewBag.StartDate = startDate?.ToString("yyyy-MM-dd");
+        ViewBag.EndDate = endDate?.ToString("yyyy-MM-dd");
+        ViewBag.Status = status;
+
+        return View(contracts);
     }
 
     // GET: CONTRACTS/Details/5
@@ -27,8 +50,8 @@ public class ContractsController : Controller
             return NotFound();
         }
 
-        var contract = await _context.Contracts
-            .FirstOrDefaultAsync(m => m.Id == id);
+        // get the contract from service
+        var contract = await _contractService.GetContractByIdAsync(id.Value);
         if (contract == null)
         {
             return NotFound();
@@ -44,18 +67,45 @@ public class ContractsController : Controller
     }
 
     // POST: CONTRACTS/Create
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([Bind("Id,StartDate,EndDate,Status,SignedAgreement,ServiceLevel,ClientId,Client,ServiceRequests")] Contract contract)
+    public async Task<IActionResult> Create(Contract contract, IFormFile pdfFile)
     {
         if (ModelState.IsValid)
         {
-            _context.Add(contract);
-            await _context.SaveChangesAsync();
+            // check if user uploaded a file
+            if (pdfFile != null)
+            {
+                var extension = Path.GetExtension(pdfFile.FileName);
+
+                // only allow pdf files
+                if (extension.ToLower() != ".pdf")
+                {
+                    ModelState.AddModelError("", "Only PDF files allowed.");
+                    return View(contract);
+                }
+
+                // generate unique filename using guid
+                var fileName = $"{Guid.NewGuid()}.pdf";
+
+                // create path in uploads folder
+                var path = Path.Combine(_environment.WebRootPath, "uploads", fileName);
+
+                // save file to server
+                using (var stream = new FileStream(path, FileMode.Create))
+                {
+                    await pdfFile.CopyToAsync(stream);
+                }
+
+                // store filename in database
+                contract.SignedAgreement = fileName;
+            }
+
+            // call service to create contract
+            await _contractService.CreateContractAsync(contract);
             return RedirectToAction(nameof(Index));
         }
+
         return View(contract);
     }
 
@@ -67,7 +117,8 @@ public class ContractsController : Controller
             return NotFound();
         }
 
-        var contract = await _context.Contracts.FindAsync(id);
+        // get contract from service
+        var contract = await _contractService.GetContractByIdAsync(id.Value);
         if (contract == null)
         {
             return NotFound();
@@ -76,11 +127,9 @@ public class ContractsController : Controller
     }
 
     // POST: CONTRACTS/Edit/5
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int? id, [Bind("Id,StartDate,EndDate,Status,SignedAgreement,ServiceLevel,ClientId,Client,ServiceRequests")] Contract contract)
+    public async Task<IActionResult> Edit(int? id, [Bind("Id,StartDate,EndDate,Status,SignedAgreement,ServiceLevel,ClientId,Client,ServiceRequests")] Contract contract, IFormFile pdfFile)
     {
         if (id != contract.Id)
         {
@@ -91,12 +140,34 @@ public class ContractsController : Controller
         {
             try
             {
-                _context.Update(contract);
-                await _context.SaveChangesAsync();
+                // handle new file upload if provided
+                if (pdfFile != null)
+                {
+                    var extension = Path.GetExtension(pdfFile.FileName);
+                    if (extension.ToLower() != ".pdf")
+                    {
+                        ModelState.AddModelError("", "Only PDF files allowed.");
+                        return View(contract);
+                    }
+
+                    var fileName = $"{Guid.NewGuid()}.pdf";
+                    var path = Path.Combine(_environment.WebRootPath, "uploads", fileName);
+
+                    using (var stream = new FileStream(path, FileMode.Create))
+                    {
+                        await pdfFile.CopyToAsync(stream);
+                    }
+
+                    contract.SignedAgreement = fileName;
+                }
+
+                // update contract using service
+                await _contractService.UpdateContractAsync(contract);
             }
-            catch (DbUpdateConcurrencyException)
+            catch
             {
-                if (!ContractExists(contract.Id))
+                // if contract doesnt exist anymore
+                if (!await _contractService.ContractExistsAsync(contract.Id))
                 {
                     return NotFound();
                 }
@@ -118,8 +189,8 @@ public class ContractsController : Controller
             return NotFound();
         }
 
-        var contract = await _context.Contracts
-            .FirstOrDefaultAsync(m => m.Id == id);
+        // get contract from service
+        var contract = await _contractService.GetContractByIdAsync(id.Value);
         if (contract == null)
         {
             return NotFound();
@@ -133,18 +204,53 @@ public class ContractsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int? id)
     {
-        var contract = await _context.Contracts.FindAsync(id);
-        if (contract != null)
-        {
-            _context.Contracts.Remove(contract);
-        }
-
-        await _context.SaveChangesAsync();
+        // use service to delete
+        await _contractService.DeleteContractAsync(id.Value);
         return RedirectToAction(nameof(Index));
     }
 
-    private bool ContractExists(int? id)
+    // download the pdf file for a contract
+    public async Task<IActionResult> Download(int? id)
     {
-        return _context.Contracts.Any(e => e.Id == id);
+        if (id == null)
+        {
+            return NotFound();
+        }
+
+        // get contract from service
+        var contract = await _contractService.GetContractByIdAsync(id.Value);
+        if (contract == null || string.IsNullOrEmpty(contract.SignedAgreement))
+        {
+            return NotFound();
+        }
+
+        // build file path
+        var filePath = Path.Combine(_environment.WebRootPath, "uploads", contract.SignedAgreement);
+
+        // check if file exists
+        if (!System.IO.File.Exists(filePath))
+        {
+            return NotFound();
+        }
+
+        // read file and return it
+        var fileBytes = System.IO.File.ReadAllBytes(filePath);
+        return File(fileBytes, "application/pdf", contract.SignedAgreement);
+    }
+
+    // convert currency - used by javascript
+    [HttpPost]
+    public async Task<IActionResult> ConvertCurrency([FromBody] dynamic request)
+    {
+        // TODO: better validation here maybe
+        if (request == null)
+        {
+            return BadRequest();
+        }
+
+        // call currency service to get the converted amount
+        var converted = await _currencyService.ConvertCurrency(request.Amount);
+
+        return Json(new { result = converted });
     }
 }
