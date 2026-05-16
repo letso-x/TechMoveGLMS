@@ -4,13 +4,14 @@
     ViewData["Title"] = "Create";
 }
 
-<h1>Create</h1>
+<h1>Create New Contract</h1>
 
 <h4>Contract</h4>
 <hr />
 <div class="row">
     <div class="col-md-4">
-        <form asp-action="Create">
+        <!-- form for creating contract with file upload -->
+        <form asp-action="Create" enctype="multipart/form-data">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
             <div class="form-group">
@@ -32,9 +33,10 @@
             </div>
 
             <div class="form-group">
-                <label asp-for="SignedAgreement" class="control-label"></label>
-                <input asp-for="SignedAgreement" class="form-control" />
-                <span asp-validation-for="SignedAgreement" class="text-danger"></span>
+                <label for="pdfFile" class="control-label">Signed Agreement (PDF)</label>
+                <!-- file input for pdf upload -->
+                <input type="file" id="pdfFile" name="pdfFile" class="form-control" accept=".pdf" />
+                <small class="form-text text-muted">Only PDF files allowed</small>
             </div>
 
             <div class="form-group">
@@ -50,17 +52,6 @@
             </div>
 
             <div class="form-group">
-                <label asp-for="Client" class="control-label"></label>
-                <input asp-for="Client" class="form-control" />
-                <span asp-validation-for="Client" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="ServiceRequests" class="control-label"></label>
-                <input asp-for="ServiceRequests" class="form-control" />
-                <span asp-validation-for="ServiceRequests" class="text-danger"></span>
-            </div>
-            <div class="form-group">
                 <input type="submit" value="Create" class="btn btn-primary" />
             </div>
         </form>
@@ -70,3 +61,7 @@
 <div>
     <a asp-action="Index">Back to List</a>
 </div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

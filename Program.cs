@@ -1,5 +1,7 @@
-using TechMoveGLMS.Data;
 using Microsoft.EntityFrameworkCore;
+using TechMoveGLMS.Data;
+using TechMoveGLMS.Interfaces;
+using TechMoveGLMS.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -8,6 +10,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// register service dependencies
+builder.Services.AddScoped<IServiceRequestService, ServiceRequestService>();
+builder.Services.AddScoped<IContractService, ContractService>();
+builder.Services.AddScoped<IClientService, ClientService>();
+builder.Services.AddHttpClient<ICurrencyService, CurrencyService>();
 
 var app = builder.Build();
 

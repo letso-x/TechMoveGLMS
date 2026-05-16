@@ -1,22 +1,23 @@
 
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TechMoveGLMS.Models;
-using TechMoveGLMS.Data;
+using TechMoveGLMS.Interfaces;
 
 public class ClientsController : Controller
 {
-    private readonly AppDbContext _context;
+    private readonly IClientService _clientService;
 
-    public ClientsController(AppDbContext context)
+    // inject the client service
+    public ClientsController(IClientService clientService)
     {
-        _context = context;
+        _clientService = clientService;
     }
 
-    // GET: CLIENTS
+    // GET: CLIENTS - get all clients
     public async Task<IActionResult> Index()    
     {
-        return View(await _context.Clients.ToListAsync());
+        var clients = await _clientService.GetAllClientsAsync();
+        return View(clients);
     }
 
     // GET: CLIENTS/Details/5
@@ -27,8 +28,8 @@ public class ClientsController : Controller
             return NotFound();
         }
 
-        var client = await _context.Clients
-            .FirstOrDefaultAsync(m => m.Id == id);
+        // get the client from service
+        var client = await _clientService.GetClientByIdAsync(id.Value);
         if (client == null)
         {
             return NotFound();
@@ -43,17 +44,15 @@ public class ClientsController : Controller
         return View();
     }
 
-    // POST: CLIENTS/Create
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+    // POST: CLIENTS/Create - create new client
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create([Bind("Id,Name,Email,PhoneNumber,Region,Contracts")] Client client)
     {
         if (ModelState.IsValid)
         {
-            _context.Add(client);
-            await _context.SaveChangesAsync();
+            // use service to create client
+            await _clientService.CreateClientAsync(client);
             return RedirectToAction(nameof(Index));
         }
         return View(client);
@@ -67,7 +66,8 @@ public class ClientsController : Controller
             return NotFound();
         }
 
-        var client = await _context.Clients.FindAsync(id);
+        // get client from service
+        var client = await _clientService.GetClientByIdAsync(id.Value);
         if (client == null)
         {
             return NotFound();
@@ -75,9 +75,7 @@ public class ClientsController : Controller
         return View(client);
     }
 
-    // POST: CLIENTS/Edit/5
-    // To protect from overposting attacks, enable the specific properties you want to bind to.
-    // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+    // POST: CLIENTS/Edit/5 - update client
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int? id, [Bind("Id,Name,Email,PhoneNumber,Region,Contracts")] Client client)
@@ -91,12 +89,13 @@ public class ClientsController : Controller
         {
             try
             {
-                _context.Update(client);
-                await _context.SaveChangesAsync();
+                // update using service
+                await _clientService.UpdateClientAsync(client);
             }
-            catch (DbUpdateConcurrencyException)
+            catch
             {
-                if (!ClientExists(client.Id))
+                // check if client still exists
+                if (!await _clientService.ClientExistsAsync(client.Id))
                 {
                     return NotFound();
                 }
@@ -118,8 +117,8 @@ public class ClientsController : Controller
             return NotFound();
         }
 
-        var client = await _context.Clients
-            .FirstOrDefaultAsync(m => m.Id == id);
+        // get client from service
+        var client = await _clientService.GetClientByIdAsync(id.Value);
         if (client == null)
         {
             return NotFound();
@@ -128,23 +127,13 @@ public class ClientsController : Controller
         return View(client);
     }
 
-    // POST: CLIENTS/Delete/5
+    // POST: CLIENTS/Delete/5 - delete a client
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int? id)
     {
-        var client = await _context.Clients.FindAsync(id);
-        if (client != null)
-        {
-            _context.Clients.Remove(client);
-        }
-
-        await _context.SaveChangesAsync();
+        // delete using service
+        await _clientService.DeleteClientAsync(id.Value);
         return RedirectToAction(nameof(Index));
-    }
-
-    private bool ClientExists(int? id)
-    {
-        return _context.Clients.Any(e => e.Id == id);
     }
 }
