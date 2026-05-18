@@ -17,10 +17,12 @@ public class ServiceRequestsController : Controller
         _service = service;
     }
 
-    // GET: SERVICEREQUESTS - get all requests
+    // GET: SERVICEREQUESTS 
     public async Task<IActionResult> Index()    
     {
-        var requests = await _context.ServiceRequests.ToListAsync();
+        var requests = await _context.ServiceRequests
+            .Include(sr => sr.Contract)
+            .ToListAsync();
         return View(requests);
     }
 
@@ -33,6 +35,7 @@ public class ServiceRequestsController : Controller
         }
 
         var servicerequest = await _context.ServiceRequests
+            .Include(sr => sr.Contract)
             .FirstOrDefaultAsync(m => m.Id == id);
         if (servicerequest == null)
         {
@@ -48,16 +51,23 @@ public class ServiceRequestsController : Controller
         return View();
     }
 
-    // POST: SERVICEREQUESTS/Create - validates using service before saving
+    // POST: SERVICEREQUESTS/Create 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create([Bind("Id,Description,ContractId,Cost,Status,Contract")] ServiceRequest servicerequest)
     {
         if (ModelState.IsValid)
         {
-            // service handles validation (contract status check)
-            await _service.CreateRequest(servicerequest);
-            return RedirectToAction(nameof(Index));
+            try
+            {
+                // service handles validation (contract status check)
+                await _service.CreateRequest(servicerequest);
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError(string.Empty, ex.Message);
+            }
         }
         return View(servicerequest);
     }
@@ -70,7 +80,9 @@ public class ServiceRequestsController : Controller
             return NotFound();
         }
 
-        var servicerequest = await _context.ServiceRequests.FindAsync(id);
+        var servicerequest = await _context.ServiceRequests
+            .Include(sr => sr.Contract)
+            .FirstOrDefaultAsync(sr => sr.Id == id);
         if (servicerequest == null)
         {
             return NotFound();
@@ -120,6 +132,7 @@ public class ServiceRequestsController : Controller
         }
 
         var servicerequest = await _context.ServiceRequests
+            .Include(sr => sr.Contract)
             .FirstOrDefaultAsync(m => m.Id == id);
         if (servicerequest == null)
         {

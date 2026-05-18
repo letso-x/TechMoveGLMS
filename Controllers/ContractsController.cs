@@ -18,7 +18,7 @@ public class ContractsController : Controller
         _currencyService = currencyService;
     }
 
-    // GET: CONTRACTS - shows all contracts with optional filters
+    // GET: CONTRACTS 
     public async Task<IActionResult> Index(DateTime? startDate = null, DateTime? endDate = null, string status = null)    
     {
         // i think this is how you parse the status from the dropdown
@@ -240,9 +240,8 @@ public class ContractsController : Controller
 
     // convert currency - used by javascript
     [HttpPost]
-    public async Task<IActionResult> ConvertCurrency([FromBody] dynamic request)
+    public async Task<IActionResult> ConvertCurrency([FromBody] CurrencyRequest request)
     {
-        // TODO: better validation here maybe
         if (request == null)
         {
             return BadRequest();

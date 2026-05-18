@@ -78,7 +78,7 @@ namespace TechMoveGLMS.Services
             }
             catch (DbUpdateConcurrencyException)
             {
-                // TODO: maybe add better error handling here
+                
                 throw;
             }
         }

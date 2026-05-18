@@ -44,7 +44,7 @@ public class ClientsController : Controller
         return View();
     }
 
-    // POST: CLIENTS/Create - create new client
+    // POST: CLIENTS/Create 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create([Bind("Id,Name,Email,PhoneNumber,Region,Contracts")] Client client)
@@ -75,7 +75,7 @@ public class ClientsController : Controller
         return View(client);
     }
 
-    // POST: CLIENTS/Edit/5 - update client
+    // POST: CLIENTS/Edit/5 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int? id, [Bind("Id,Name,Email,PhoneNumber,Region,Contracts")] Client client)
@@ -127,7 +127,7 @@ public class ClientsController : Controller
         return View(client);
     }
 
-    // POST: CLIENTS/Delete/5 - delete a client
+    // POST: CLIENTS/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int? id)

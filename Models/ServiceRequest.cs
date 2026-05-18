@@ -11,9 +11,11 @@ namespace TechMoveGLMS.Models
         [ForeignKey("Contract")]
         public int ContractId { get; set; }
 
-        public double Cost { get; set; }
+        [Required(ErrorMessage = "Please enter a cost")]
+        [DisplayFormat(DataFormatString = "{0:F2}")]
+        public decimal Cost { get; set; }
 
         public ServiceRequestStatus Status { get; set; }
-        public Contract Contract { get; set; }
+        public Contract? Contract { get; set; }
     }
 }
