@@ -25,4 +25,8 @@
     <None Include=".github\workflows\tests.yml" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\TechMoveGLMS.Tests\TechMoveGLMS.Tests.csproj" />
+  </ItemGroup>
+
 </Project>
