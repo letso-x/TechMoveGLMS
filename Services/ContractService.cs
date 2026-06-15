@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-using TechMoveGLMS.Data;
+using System.Net;
+using System.Net.Http.Json;
 using TechMoveGLMS.Interfaces;
 using TechMoveGLMS.Models;
 
@@ -7,50 +7,46 @@ namespace TechMoveGLMS.Services
 {
     public class ContractService : IContractService
     {
-        private readonly AppDbContext _context;
+        private readonly ApiService _apiService;
 
-        // constructor that takes the database context
-        public ContractService(AppDbContext context)
+        public ContractService(ApiService apiService)
         {
-            _context = context;
+            _apiService = apiService;
         }
 
-        // gets all contracts, with optional filtering
         public async Task<List<Contract>> GetAllContractsAsync(DateTime? startDate = null, DateTime? endDate = null, ContractStatus? status = null)
         {
-            var query = _context.Contracts.AsQueryable();
+            var client = _apiService.GetAuthorizedClient();
+            var url = status.HasValue ? $"api/contracts?status={status.Value}" : "api/contracts";
+            var contracts = await client.GetFromJsonAsync<List<Contract>>(url) ?? new List<Contract>();
 
-            // filter by start date if provided
             if (startDate.HasValue)
             {
-                query = query.Where(c => c.StartDate >= startDate);
+                contracts = contracts.Where(c => c.StartDate >= startDate.Value).ToList();
             }
 
-            // filter by end date if provided
             if (endDate.HasValue)
             {
-                query = query.Where(c => c.EndDate <= endDate);
+                contracts = contracts.Where(c => c.EndDate <= endDate.Value).ToList();
             }
 
-            // filter by status if provided
-            if (status.HasValue)
-            {
-                query = query.Where(c => c.Status == status);
-            }
-
-            // execute the query
-            var result = await query.ToListAsync();
-            return result;
+            return contracts;
         }
 
-        // get a contract by id
         public async Task<Contract> GetContractByIdAsync(int id)
         {
-            var contract = await _context.Contracts.FirstOrDefaultAsync(c => c.Id == id);
-            return contract;
+            var client = _apiService.GetAuthorizedClient();
+            var response = await client.GetAsync($"api/contracts/{id}");
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<Contract>();
         }
 
-        // create a new contract in the database
         public async Task CreateContractAsync(Contract contract)
         {
             if (contract == null)
@@ -58,12 +54,11 @@ namespace TechMoveGLMS.Services
                 throw new ArgumentNullException(nameof(contract));
             }
 
-            _context.Add(contract);
-            // save the changes to database
-            await _context.SaveChangesAsync();
+            var client = _apiService.GetAuthorizedClient();
+            var response = await client.PostAsJsonAsync("api/contracts", contract);
+            response.EnsureSuccessStatusCode();
         }
 
-        // update an existing contract
         public async Task UpdateContractAsync(Contract contract)
         {
             if (contract == null)
@@ -71,34 +66,23 @@ namespace TechMoveGLMS.Services
                 throw new ArgumentNullException(nameof(contract));
             }
 
-            try
-            {
-                _context.Update(contract);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                
-                throw;
-            }
+            var client = _apiService.GetAuthorizedClient();
+            var response = await client.PutAsJsonAsync($"api/contracts/{contract.Id}", contract);
+            response.EnsureSuccessStatusCode();
         }
 
-        // delete a contract by id
         public async Task DeleteContractAsync(int id)
         {
-            var contract = await _context.Contracts.FindAsync(id);
-            if (contract != null)
-            {
-                _context.Contracts.Remove(contract);
-                await _context.SaveChangesAsync();
-            }
+            var client = _apiService.GetAuthorizedClient();
+            var response = await client.DeleteAsync($"api/contracts/{id}");
+            response.EnsureSuccessStatusCode();
         }
 
-        // check if contract exists
         public async Task<bool> ContractExistsAsync(int id)
         {
-            var exists = await _context.Contracts.AnyAsync(c => c.Id == id);
-            return exists;
+            var client = _apiService.GetAuthorizedClient();
+            var response = await client.GetAsync($"api/contracts/{id}");
+            return response.IsSuccessStatusCode;
         }
     }
 }

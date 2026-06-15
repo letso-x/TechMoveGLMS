@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
-using TechMoveGLMS.Data;
+using System.Net;
+using System.Net.Http.Json;
 using TechMoveGLMS.Interfaces;
 using TechMoveGLMS.Models;
 
@@ -7,29 +7,33 @@ namespace TechMoveGLMS.Services
 {
     public class ClientService : IClientService
     {
-        private readonly AppDbContext _context;
+        private readonly ApiService _apiService;
 
-        // constructor
-        public ClientService(AppDbContext context)
+        public ClientService(ApiService apiService)
         {
-            _context = context;
+            _apiService = apiService;
         }
 
-        // get all clients from database
         public async Task<List<Client>> GetAllClientsAsync()
         {
-            var clients = await _context.Clients.ToListAsync();
-            return clients;
+            var client = _apiService.GetAuthorizedClient();
+            return await client.GetFromJsonAsync<List<Client>>("api/clients") ?? new List<Client>();
         }
 
-        // get a client by their id
         public async Task<Client> GetClientByIdAsync(int id)
         {
-            var client = await _context.Clients.FirstOrDefaultAsync(c => c.Id == id);
-            return client;
+            var client = _apiService.GetAuthorizedClient();
+            var response = await client.GetAsync($"api/clients/{id}");
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<Client>();
         }
 
-        // create a new client
         public async Task CreateClientAsync(Client client)
         {
             if (client == null)
@@ -37,11 +41,11 @@ namespace TechMoveGLMS.Services
                 throw new ArgumentNullException(nameof(client));
             }
 
-            _context.Add(client);
-            await _context.SaveChangesAsync();
+            var apiClient = _apiService.GetAuthorizedClient();
+            var response = await apiClient.PostAsJsonAsync("api/clients", client);
+            response.EnsureSuccessStatusCode();
         }
 
-        // update client information
         public async Task UpdateClientAsync(Client client)
         {
             if (client == null)
@@ -49,33 +53,23 @@ namespace TechMoveGLMS.Services
                 throw new ArgumentNullException(nameof(client));
             }
 
-            try
-            {
-                _context.Update(client);
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                // this happened before, not sure why
-                throw ex;
-            }
+            var apiClient = _apiService.GetAuthorizedClient();
+            var response = await apiClient.PutAsJsonAsync($"api/clients/{client.Id}", client);
+            response.EnsureSuccessStatusCode();
         }
 
-        // delete a client by id
         public async Task DeleteClientAsync(int id)
         {
-            var client = await _context.Clients.FindAsync(id);
-            if (client != null)
-            {
-                _context.Clients.Remove(client);
-                await _context.SaveChangesAsync();
-            }
+            var client = _apiService.GetAuthorizedClient();
+            var response = await client.DeleteAsync($"api/clients/{id}");
+            response.EnsureSuccessStatusCode();
         }
 
-        // check if a client exists
         public async Task<bool> ClientExistsAsync(int id)
         {
-            return await _context.Clients.AnyAsync(c => c.Id == id);
+            var client = _apiService.GetAuthorizedClient();
+            var response = await client.GetAsync($"api/clients/{id}");
+            return response.IsSuccessStatusCode;
         }
     }
 }

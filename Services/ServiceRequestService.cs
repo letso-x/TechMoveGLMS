@@ -1,19 +1,37 @@
-﻿using TechMoveGLMS.Data;
+using System.Net;
+using System.Net.Http.Json;
 using TechMoveGLMS.Interfaces;
 using TechMoveGLMS.Models;
-using Microsoft.EntityFrameworkCore;
-
-
 
 namespace TechMoveGLMS.Services
 {
     public class ServiceRequestService : IServiceRequestService
     {
-        private readonly AppDbContext _context;
+        private readonly ApiService _apiService;
 
-        public ServiceRequestService(AppDbContext context)
+        public ServiceRequestService(ApiService apiService)
         {
-            _context = context;
+            _apiService = apiService;
+        }
+
+        public async Task<List<ServiceRequest>> GetAll()
+        {
+            var client = _apiService.GetAuthorizedClient();
+            return await client.GetFromJsonAsync<List<ServiceRequest>>("api/servicerequests") ?? new List<ServiceRequest>();
+        }
+
+        public async Task<ServiceRequest> GetById(int id)
+        {
+            var client = _apiService.GetAuthorizedClient();
+            var response = await client.GetAsync($"api/servicerequests/{id}");
+
+            if (response.StatusCode == HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<ServiceRequest>();
         }
 
         public async Task CreateRequest(ServiceRequest request)
@@ -23,26 +41,28 @@ namespace TechMoveGLMS.Services
                 throw new Exception("Request cannot be null");
             }
 
-            var contract = await _context.Contracts
-                .FirstOrDefaultAsync(c => c.Id == request.ContractId);
+            var client = _apiService.GetAuthorizedClient();
+            var response = await client.PostAsJsonAsync("api/servicerequests", request);
 
-            if (contract == null)
+            if (!response.IsSuccessStatusCode)
             {
-                throw new Exception("Contract not found.");
+                var message = await response.Content.ReadAsStringAsync();
+                throw new Exception(string.IsNullOrWhiteSpace(message) ? "Could not create service request." : message);
             }
+        }
 
-            var state = ContractStateFactory.Create(contract.Status);
+        public async Task Update(int id, ServiceRequest request)
+        {
+            var client = _apiService.GetAuthorizedClient();
+            var response = await client.PutAsJsonAsync($"api/servicerequests/{id}", request);
+            response.EnsureSuccessStatusCode();
+        }
 
-            if(!state.CanCreateRequest())
-            {
-                throw new Exception("Cannot create request for inactive contract");
-            }
-
-            _context.ServiceRequests.Add(request);
-
-            await _context.SaveChangesAsync();
-
-
-           }
+        public async Task Delete(int id)
+        {
+            var client = _apiService.GetAuthorizedClient();
+            var response = await client.DeleteAsync($"api/servicerequests/{id}");
+            response.EnsureSuccessStatusCode();
+        }
     }
 }

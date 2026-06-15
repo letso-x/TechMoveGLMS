@@ -1,28 +1,22 @@
 
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using TechMoveGLMS.Models;
-using TechMoveGLMS.Data;
 using TechMoveGLMS.Interfaces;
 
 public class ServiceRequestsController : Controller
 {
-    private readonly AppDbContext _context;
     private readonly IServiceRequestService _service;
 
     // inject dependencies
-    public ServiceRequestsController(AppDbContext context, IServiceRequestService service)
+    public ServiceRequestsController(IServiceRequestService service)
     {
-        _context = context;
         _service = service;
     }
 
     // GET: SERVICEREQUESTS 
     public async Task<IActionResult> Index()    
     {
-        var requests = await _context.ServiceRequests
-            .Include(sr => sr.Contract)
-            .ToListAsync();
+        var requests = await _service.GetAll();
         return View(requests);
     }
 
@@ -34,9 +28,7 @@ public class ServiceRequestsController : Controller
             return NotFound();
         }
 
-        var servicerequest = await _context.ServiceRequests
-            .Include(sr => sr.Contract)
-            .FirstOrDefaultAsync(m => m.Id == id);
+        var servicerequest = await _service.GetById(id.Value);
         if (servicerequest == null)
         {
             return NotFound();
@@ -80,9 +72,7 @@ public class ServiceRequestsController : Controller
             return NotFound();
         }
 
-        var servicerequest = await _context.ServiceRequests
-            .Include(sr => sr.Contract)
-            .FirstOrDefaultAsync(sr => sr.Id == id);
+        var servicerequest = await _service.GetById(id.Value);
         if (servicerequest == null)
         {
             return NotFound();
@@ -104,19 +94,11 @@ public class ServiceRequestsController : Controller
         {
             try
             {
-                _context.Update(servicerequest);
-                await _context.SaveChangesAsync();
+                await _service.Update(servicerequest.Id, servicerequest);
             }
             catch
             {
-                if (!ServiceRequestExists(servicerequest.Id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
             return RedirectToAction(nameof(Index));
         }
@@ -131,9 +113,7 @@ public class ServiceRequestsController : Controller
             return NotFound();
         }
 
-        var servicerequest = await _context.ServiceRequests
-            .Include(sr => sr.Contract)
-            .FirstOrDefaultAsync(m => m.Id == id);
+        var servicerequest = await _service.GetById(id.Value);
         if (servicerequest == null)
         {
             return NotFound();
@@ -147,18 +127,12 @@ public class ServiceRequestsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int? id)
     {
-        var servicerequest = await _context.ServiceRequests.FindAsync(id);
-        if (servicerequest != null)
+        if (id == null)
         {
-            _context.ServiceRequests.Remove(servicerequest);
+            return NotFound();
         }
 
-        await _context.SaveChangesAsync();
+        await _service.Delete(id.Value);
         return RedirectToAction(nameof(Index));
-    }
-
-    private bool ServiceRequestExists(int id)
-    {
-        return _context.ServiceRequests.Any(e => e.Id == id);
     }
 }
