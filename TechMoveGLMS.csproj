@@ -18,6 +18,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="TechMoveGLMS.API\**;TechMoveGLMS.Test\**" />
+    <Content Remove="TechMoveGLMS.API\**;TechMoveGLMS.Test\**" />
+    <EmbeddedResource Remove="TechMoveGLMS.API\**;TechMoveGLMS.Test\**" />
+    <None Remove="TechMoveGLMS.API\**;TechMoveGLMS.Test\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="wwwroot\uploads\" />
   </ItemGroup>
 

@@ -1,0 +1,39 @@
+services:
+  sql-server-db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      SA_PASSWORD: "YourStrong!Passw0rd"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd' -Q 'SELECT 1' -No -C || exit 1"]
+      interval: 15s
+      retries: 15
+      start_period: 60s
+
+  glms-backend-api:
+    build:
+      context: .
+      dockerfile: TechMoveGLMS.API/TechMoveGLMS.API.Dockerfile
+    ports:
+      - "5001:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Server=sql-server-db,1433;Database=GLMSDatabase;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;MultipleActiveResultSets=true"
+      Jwt__Key: "YourSuperSecretKeyForGLMS2026!!XY"
+    depends_on:
+      sql-server-db:
+        condition: service_healthy
+
+  glms-frontend-web:
+    build:
+      context: .
+      dockerfile: TechMoveGLMS.MVC.Dockerfile
+    ports:
+      - "5000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      GLMSAPI__BaseUrl: "http://glms-backend-api:8080/"
+    depends_on:
+      - glms-backend-api

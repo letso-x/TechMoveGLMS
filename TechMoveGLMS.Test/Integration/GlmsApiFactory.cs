@@ -33,7 +33,7 @@ namespace TechMoveGLMS.Test.Integration
                 configBuilder.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["ConnectionStrings:DefaultConnection"] = "Server=(localdb)\\mssqllocaldb;Database=GLMSDatabase;Trusted_Connection=True;MultipleActiveResultSets=true",
-                    ["Jwt:Key"] = "YourSuperSecretKeyForGLMS2026!!!"
+                    ["Jwt:Key"] = "YourSuperSecretKeyForGLMS2026!!XY"
                 });
             });
         }
