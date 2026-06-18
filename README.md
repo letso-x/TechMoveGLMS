@@ -122,15 +122,3 @@ The workflow runs on pushes and pull requests targeting `main` or `master`. It:
 4. Builds the test project.
 5. Runs `dotnet test` for `TechMoveGLMS.Test/TechMoveGLMS.Test.csproj`.
 
-No deployment workflow was found.
-
-## Screenshots
-
-Add screenshots of the application here.
-
-| View | Screenshot |
-| --- | --- |
-| Login | _Placeholder_ |
-| Clients | _Placeholder_ |
-| Contracts | _Placeholder_ |
-| Service Requests | _Placeholder_ |
